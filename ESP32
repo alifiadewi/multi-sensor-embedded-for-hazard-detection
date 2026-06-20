@@ -1,0 +1,76 @@
+const int pingPin = 7; // Trigger Pin of Ultrasonic Sensor
+const int echoPin = 6; // Echo Pin of Ultrasonic Sensor
+int respin = A0; // sensor pin used
+int buzzerPin = 5; // Pin for the buzzer
+const int BUTTON_PIN = 3; // the number of the pushbutton pin
+
+int resval = 0; // holds the value
+int lastState = LOW; // the previous state from the input pin
+int currentState; // the current reading from the input pin
+bool programEnabled = false; // flag to toggle program on/off
+
+void setup() 
+{
+  Serial.begin(9600); // Starting Serial Terminal
+  pinMode(buzzerPin, OUTPUT); // Set buzzer pin as output
+  pinMode(BUTTON_PIN, INPUT_PULLUP); // initialize the pushbutton pin as an pull-up input
+}
+
+void loop() 
+{
+  // read the state of the switch/button:
+  currentState = digitalRead(BUTTON_PIN);
+  
+  if(lastState == HIGH && currentState == LOW) {
+    programEnabled = !programEnabled; // toggle program on/off
+    Serial.println("The button is pressed");
+  } else if(lastState == LOW && currentState == HIGH) {
+    Serial.println("The button is released");
+  }
+  
+  // save the last state
+  lastState = currentState;
+  
+  if (programEnabled) {
+    long duration, inches, cm;
+    pinMode(pingPin, OUTPUT);
+    digitalWrite(pingPin, LOW);
+    delayMicroseconds(2);
+    digitalWrite(pingPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(pingPin, LOW);
+    
+    pinMode(echoPin, INPUT);
+    duration = pulseIn(echoPin, HIGH);
+    cm = microsecondsToCentimeters(duration);
+    
+    Serial.print("Distance: ");
+    Serial.print(cm);
+    Serial.print("cm");
+    Serial.println();
+    
+    resval = analogRead(respin); //Read data from analog pin
+    
+    if (resval<=100){
+      Serial.println("No Water");
+    }
+    else if (resval>100){
+      Serial.println("Water");
+    }
+    
+    if ((resval > 100) || (cm < 75)) {
+      digitalWrite(buzzerPin, HIGH); // Turn on the buzzer
+    } else {
+      digitalWrite(buzzerPin, LOW); // Turn off the buzzer
+    }
+    
+    delay(100);
+  } else {
+    digitalWrite(buzzerPin, LOW); // Turn off the buzzer when program is off
+  }
+}
+
+long microsecondsToCentimeters(long microseconds)
+{
+  return microseconds / 29 / 2;
+}
